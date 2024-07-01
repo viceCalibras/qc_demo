@@ -2,14 +2,14 @@ import cv2
 import depthai as dai
 import numpy as np
 
-def isolate_cubes(input_frame: np.ndarray):
-    """Isolate LEGO cubes from the background.
+def isolate_bricks(input_frame: np.ndarray):
+    """Isolate LEGO bricks from the background.
 
     Args:
         input_frame (np.ndarray): Input frame of the camera.
 
     Returns:
-        Frame with isolated LEGO cubes.
+        Frame with isolated LEGO bricks.
     """
     # Convert to greyscale to speed up processing.
     frame = cv2.cvtColor(input_frame, cv2.COLOR_BGR2GRAY)
@@ -33,9 +33,9 @@ def isolate_cubes(input_frame: np.ndarray):
     binary = cv2.threshold(frame, 25, 90, cv2.THRESH_BINARY)[1]
     binary = binary.astype(np.uint8)
 
-    # Do a morphological opening operation to remove possible remaining noise.
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    cubes = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel, iterations=2)
+    # Do a morphological closing operation to better isolate outer contours of the bricks.
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (6, 6))
+    cubes = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=4)
     
     return cubes
 
@@ -51,12 +51,15 @@ def measure_and_label(input_frame: np.ndarray, frame: np.ndarray):
     """
     # Find contours or continuous white clusters(blobs) in the image
     contours, _ = cv2.findContours(input_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Draw a bounding box/rectangle around the defect
+    # Draw a bounding box around the cubes.
     for cnt in contours:
         x,y,w,h = cv2.boundingRect(cnt)
         measured_frame = cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 2)
-        measured_frame = cv2.putText(measured_frame , "Defect", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)  
+        measured_frame = cv2.putText(measured_frame , "Defect", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
+        # rect = cv2.minAreaRect(cnt)
+        # box = cv2.boxPoints(rect)
+        # box = box.astype(np.int8)
+        # measured_frame = cv2.drawContours(frame, [box], 0, (0, 255, 0), 2)
   
     return measured_frame
 
@@ -89,7 +92,7 @@ if __name__== "__main__":
             if in_rgb is not None:
                 # Extract the frame, process, measure and visualize.
                 frame = in_rgb.getCvFrame() 
-                processed_frame = isolate_cubes(frame)
+                processed_frame = isolate_bricks(frame)
                 measured_frame = measure_and_label(processed_frame, frame)
 
                 cv2.imshow("measurement", measured_frame)
