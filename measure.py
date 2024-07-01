@@ -53,20 +53,23 @@ def measure_and_label(input_frame: np.ndarray, frame: np.ndarray):
         RGB frame with dimensions.
     """
     # Find contours or continuous white clusters(blobs) in the image
-    # print(input_frame)
     contours, _ = cv2.findContours(input_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    # print("HI!")
-    # print(contours)
     # Draw a bounding box around the cubes.
     measured_frame = input_frame
     for cnt in contours:
-        x,y,w,h = cv2.boundingRect(cnt)
-        measured_frame = cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 2)
-        measured_frame = cv2.putText(measured_frame , "Defect", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
-        # rect = cv2.minAreaRect(cnt)
-        # box = cv2.boxPoints(rect)
-        # box = box.astype(np.int8)
-        # measured_frame = cv2.drawContours(frame, [box], 0, (0, 255, 0), 2)
+        rect = cv2.minAreaRect(cnt)
+        box = cv2.boxPoints(rect)
+        box = box.astype(np.uint64)
+        measured_frame = cv2.drawContours(frame, [box], 0, (0, 255, 0), 2)
+        x1 = np.array([box[0][0], box[0][1]]).astype(np.uint8)
+        x2 = np.array([box[1][0], box[1][1]]).astype(np.uint8)
+        width = round(np.linalg.norm(x2 - x1), 2)
+        y1 = np.array([box[2][0], box[2][1]]).astype(np.uint8)
+        y2 = np.array([box[3][0], box[3][1]]).astype(np.uint8)
+        length = round(np.linalg.norm(y2 - y1), 2)
+        measured_frame = cv2.putText(measured_frame , "Width: " + str(width), (int(box[0][0]), int(box[0][1]) + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
+        measured_frame = cv2.putText(measured_frame , "Length: " + str(length), (int(box[0][0]), int(box[0][1]) + 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
+
     if measured_frame is not None:
         return measured_frame
 
