@@ -14,6 +14,9 @@ def isolate_bricks(input_frame: np.ndarray):
     # Convert to greyscale to speed up processing.
     frame = cv2.cvtColor(input_frame, cv2.COLOR_BGR2GRAY)
 
+    # Blur the images to get rid of sharp edges/outlines (further simplification).
+    frame = cv2.GaussianBlur(frame, (21, 21), 0)
+
     # Normalize frame to the 0-255 range & change the data type
     # (some of the following operations are expecting greyscale image with uint8 pixels):
     frame_max = np.max(frame)
@@ -35,23 +38,27 @@ def isolate_bricks(input_frame: np.ndarray):
 
     # Do a morphological closing operation to better isolate outer contours of the bricks.
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (6, 6))
-    cubes = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=4)
+    cubes = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=6)
     
     return cubes
 
 def measure_and_label(input_frame: np.ndarray, frame: np.ndarray):
-    """
-    Requires greyscale input!
+    """Isolates the LEGO bricks contours & outputs their basic dimensions.
 
     Args:
         input_frame (np.ndarray): Input frame. Has to be greyscale!
+        frame (np.ndarray): Input RGB frame. 
 
     Returns:
-        _type_: _description_
+        RGB frame with dimensions.
     """
     # Find contours or continuous white clusters(blobs) in the image
+    # print(input_frame)
     contours, _ = cv2.findContours(input_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # print("HI!")
+    # print(contours)
     # Draw a bounding box around the cubes.
+    measured_frame = input_frame
     for cnt in contours:
         x,y,w,h = cv2.boundingRect(cnt)
         measured_frame = cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 2)
@@ -60,8 +67,8 @@ def measure_and_label(input_frame: np.ndarray, frame: np.ndarray):
         # box = cv2.boxPoints(rect)
         # box = box.astype(np.int8)
         # measured_frame = cv2.drawContours(frame, [box], 0, (0, 255, 0), 2)
-  
-    return measured_frame
+    if measured_frame is not None:
+        return measured_frame
 
 if __name__== "__main__":
     # Create pipeline.
@@ -93,10 +100,13 @@ if __name__== "__main__":
                 # Extract the frame, process, measure and visualize.
                 frame = in_rgb.getCvFrame() 
                 processed_frame = isolate_bricks(frame)
-                measured_frame = measure_and_label(processed_frame, frame)
-
-                cv2.imshow("measurement", measured_frame)
-                cv2.imshow("processing", processed_frame)
+                if processed_frame is not None:
+                    # contours, _ = cv2.findContours(processed_frame , cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                    # print(contours)
+                    measured_frame = measure_and_label(processed_frame, frame)
+                    cv2.imshow("processing", processed_frame)
+                    # cv2.imshow("raw", frame)
+                    cv2.imshow("measurement", measured_frame)
 
             if cv2.waitKey(1) == ord('q'):
                 break
