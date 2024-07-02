@@ -1,5 +1,7 @@
-# lego_demo
-Basic camera setup:
+# Quality Control Demo
+Simple OAK-D camera based Quality Control demo.
+
+## Basic camera setup
 ```bash
 # Create a basic virtual environment.
 python3 -m venv .venv
@@ -15,3 +17,6 @@ python3 ColorCamera/rgb_preview.py
 ```
 Extra code samples: https://docs.luxonis.com/projects/api/en/latest/tutorials/code_samples/#code-samples
 
+## Measurement
+Measurement consists of basic object isolation, based upon simple image processing. It is followed by computation & visualization of oriented bbox.
+To run: `python3 measure.py`

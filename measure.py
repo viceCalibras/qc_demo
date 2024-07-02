@@ -2,14 +2,14 @@ import cv2
 import depthai as dai
 import numpy as np
 
-def isolate_bricks(input_frame: np.ndarray):
-    """Isolate LEGO bricks from the background.
+def isolate_object(input_frame: np.ndarray):
+    """Isolate measurement objects from the background.
 
     Args:
         input_frame (np.ndarray): Input frame of the camera.
 
     Returns:
-        Frame with isolated LEGO bricks.
+        Frame with isolated measurement objects.
     """
     # Convert to greyscale to speed up processing.
     frame = cv2.cvtColor(input_frame, cv2.COLOR_BGR2GRAY)
@@ -102,7 +102,7 @@ if __name__== "__main__":
             if in_rgb is not None:
                 # Extract the frame, process, measure and visualize.
                 frame = in_rgb.getCvFrame() 
-                processed_frame = isolate_bricks(frame)
+                processed_frame = isolate_object(frame)
                 if processed_frame is not None:
                     # contours, _ = cv2.findContours(processed_frame , cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                     # print(contours)
