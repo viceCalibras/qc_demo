@@ -2,6 +2,9 @@ import cv2
 import depthai as dai
 import numpy as np
 
+FRAME_W = 640
+FRAME_H = 480
+
 def isolate_object(input_frame: np.ndarray):
     """Isolate measurement objects from the background.
 
@@ -43,7 +46,7 @@ def isolate_object(input_frame: np.ndarray):
     return cubes
 
 def measure_and_label(input_frame: np.ndarray, frame: np.ndarray):
-    """Isolates the LEGO bricks contours & outputs their basic dimensions.
+    """Isolates the measurement objects contours & outputs their basic dimensions.
 
     Args:
         input_frame (np.ndarray): Input frame. Has to be greyscale!
@@ -54,21 +57,25 @@ def measure_and_label(input_frame: np.ndarray, frame: np.ndarray):
     """
     # Find contours or continuous white clusters(blobs) in the image
     contours, _ = cv2.findContours(input_frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    # Draw a bounding box around the cubes.
+    # Draw a bounding box.
     measured_frame = input_frame
     for cnt in contours:
         rect = cv2.minAreaRect(cnt)
         box = cv2.boxPoints(rect)
         box = box.astype(np.uint64)
         measured_frame = cv2.drawContours(frame, [box], 0, (0, 255, 0), 2)
+        # Compute the width & length.
         x1 = np.array([box[0][0], box[0][1]]).astype(np.uint8)
         x2 = np.array([box[1][0], box[1][1]]).astype(np.uint8)
         width = round(np.linalg.norm(x2 - x1), 2)
         y1 = np.array([box[2][0], box[2][1]]).astype(np.uint8)
         y2 = np.array([box[3][0], box[3][1]]).astype(np.uint8)
         length = round(np.linalg.norm(y2 - y1), 2)
-        measured_frame = cv2.putText(measured_frame , "Width: " + str(width), (int(box[0][0]), int(box[0][1]) + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
-        measured_frame = cv2.putText(measured_frame , "Length: " + str(length), (int(box[0][0]), int(box[0][1]) + 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
+        cord_1 = int(box[0][0])
+        cord_2 = int(box[0][1])
+        # TODO(viceCalibras) Crashing here, wrong type of coordinates?
+        measured_frame = cv2.putText(measured_frame, "Width: " + str(width), (cord_1, cord_2 + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
+        measured_frame = cv2.putText(measured_frame, "Length: " + str(length), (cord_1, cord_2 + 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2) 
 
     if measured_frame is not None:
         return measured_frame
@@ -83,7 +90,7 @@ if __name__== "__main__":
 
     # Set node properties.
     xout_rgb.setStreamName("rgb")
-    cam_rgb.setPreviewSize(640, 480)
+    cam_rgb.setPreviewSize(FRAME_W, FRAME_H)
     cam_rgb.setInterleaved(False)
     cam_rgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.RGB)
     cam_rgb.setBoardSocket(dai.CameraBoardSocket.RGB)
@@ -104,11 +111,8 @@ if __name__== "__main__":
                 frame = in_rgb.getCvFrame() 
                 processed_frame = isolate_object(frame)
                 if processed_frame is not None:
-                    # contours, _ = cv2.findContours(processed_frame , cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                    # print(contours)
                     measured_frame = measure_and_label(processed_frame, frame)
                     cv2.imshow("processing", processed_frame)
-                    # cv2.imshow("raw", frame)
                     cv2.imshow("measurement", measured_frame)
 
             if cv2.waitKey(1) == ord('q'):
