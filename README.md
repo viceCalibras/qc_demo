@@ -1,6 +1,8 @@
 # Quality Control Demo
 Simple OAK-D camera based Quality Control demo.
 
+![](demo_setup.jpg)
+
 ## Basic camera setup
 ```bash
 # Create a basic virtual environment.
